@@ -443,7 +443,7 @@ newModal = function(title, body, footer, size){
 autocomplete = function(options){
     var modal;
     var searchInput;
-    $('#test').click(function(e) {
+    Mousetrap.bind(['command+k', 'ctrl+k'], function(e) {
         var t;
         var lastQuery;
         var index = -1;
