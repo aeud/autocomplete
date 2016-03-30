@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="autocomplete.css">
+    <style>
+    #autocomplete ul.autocomplete-results-ul {
+        list-style: none;
+        margin-top: 20px;
+        padding-left: 0;
+    }
+    #autocomplete li.autocomplete-item.active {
+        background-color: #ddd;
+    }
+    #autocomplete span.autocomplete-result-content {
+        padding-bottom: 10px;
+        position: relative;
+        top: 3px;
+        left: 27px;
+    }
+    #autocomplete a.autocomplete-result-link {
+        position: relative;
+        display: block;
+    }
+    #autocomplete a.autocomplete-result-link.product {
+        position: relative;
+        display: block;
+        height: 50px;
+        padding: 0 0 0 30px;
+    }
+    #autocomplete a.autocomplete-result-link.product img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        height: 100%;
+    }
+    #autocomplete input.autocomplete-input {
+        display: block;
+        font-size: 20px;
+        padding: 10px 5px;
+        width: 100%;
+    }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mousetrap/1.4.6/mousetrap.min.js"></script>
+    <script src="https://rawgit.com/aeud/autocomplete/master/autocomplete.js?v=2"></script>
+    <script>
+    autocomplete = function(options){
+        var modal;
+        var searchInput;
+        Mousetrap.bind(['command+k', 'ctrl+k'], function(e) {
+            var t;
+            var lastQuery;
+            var index = -1;
+            var results = [];
+            if (typeof modal == 'object') {
+                modal.modal('show');
+            } else {
+                searchInput = $('<input>')/*.attr('autofocus', 'autofocus')*/.attr('class', 'autocomplete-input');
+                var resultsArea = $('<div>').attr('id', 'acresults');
+                var searchDOM = $('<div>').append(searchInput).append(resultsArea);
+                modal = newModal('Search', searchDOM);
+                modal.attr('id', 'autocomplete');
+                searchInput.keyup(function(){
+                    if (typeof t != 'undefined') {
+                        clearTimeout(t);
+                    }
+                    var val = $(this).val();
+                    if (/.+/gi.test(val) && val != lastQuery) {
+                        t = setTimeout(function(){
+                            $.ajax({
+                                'url': options.url,
+                                'data': {
+                                    'q': val 
+                                },
+                                'success': function(data){
+                                    resultsArea.html('');
+                                    lastQuery = data.q;
+                                    var ul = $('<ul>').attr('class', 'autocomplete-results-ul');
+                                    var _j = 0;
+                                    results = data.categories.map(function(category){
+                                        var div = $('<div>').attr('class', 'autocomplete-category');
+                                        div.append($('<div>').attr('class', 'autocomplete-category-title').html(category.category));
+                                        var ul = $('<ul>').attr('class', 'autocomplete-results-ul');
+                                        var mem = category.results.map(function(hit){
+                                            var _i = parseInt(_j++);
+                                            var span = $('<span>').attr('class', 'autocomplete-result-content').html(hit.name);
+                                            var a = $('<a>').attr('href', hit.self_link).attr('class', 'autocomplete-result-link').addClass(hit.type).append(span);
+                                            if (hit.images && hit.images.length > 0) {
+                                                a.append($('<img>').attr('src', hit.images[0].image_url));
+                                            }
+                                            var li = $('<li>').attr('class', 'autocomplete-item').append(a);
+                                            ul.append(li);
+                                            li.hover(function(){
+                                                index = _i;
+                                                results.forEach(function(data, _i){
+                                                    if (_i == index) {
+                                                        data.li.addClass('active');
+                                                    } else {
+                                                        data.li.removeClass('active');
+                                                    }
+                                                });
+                                            });
+                                            return {
+                                                'li': li,
+                                                'hit': hit
+                                            };
+                                        });
+                                        div.append(ul);
+                                        resultsArea.append(div);
+                                        return mem;
+                                    }).reduce(function(a, b){ return a.concat(b); }, []);
+                                    index = -1;
+                                }
+                            });
+                        }, 100);
+                    }
+                }).keydown(function(e) {
+                    switch(e.which) {
+                        case 40:
+                            index = results.length > 0 ? ((index + 1) % results.length) : -1;
+                            break;
+                        case 38:
+                            index = results.length > 0 ? ((results.length + index - 1) % results.length) : -1;
+                            break;
+                        case 13:
+                            if (index > -1) {
+                                window.location.href = results[index].hit.self_link;
+                                break;
+                            }
+                        default:
+                            return;
+                    }
+                    results.forEach(function(data, _i){
+                        if (_i == index) {
+                            data.li.addClass('active');
+                        } else {
+                            data.li.removeClass('active');
+                        }
+                    });
+                    e.preventDefault();
+                });
+            }
+            setTimeout(function(){ searchInput.focus(); }, 200);
+            return false;
+        });
+    }
+    </script>
+    <script>
+    autocomplete({ 'url': 'https://delta.luxola.com/search/autocomplete' });
+    </script>
+</body>
+</html>
