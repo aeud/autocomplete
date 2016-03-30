@@ -69,6 +69,9 @@ autocomplete = function(options){
                                         var _i = parseInt(_j++);
                                         var span = $('<span>').attr('class', 'autocomplete-result-content').html(hit.name);
                                         var a = $('<a>').attr('href', hit.self_link).attr('class', 'autocomplete-result-link').append(span);
+                                        if (hit.images && hit.images.length > 0) {
+                                            a.append($('<img>').attr('src', hit.images[0].image_url));
+                                        }
                                         var li = $('<li>').attr('class', 'autocomplete-item').append(a);
                                         ul.append(li);
                                         li.hover(function(){
